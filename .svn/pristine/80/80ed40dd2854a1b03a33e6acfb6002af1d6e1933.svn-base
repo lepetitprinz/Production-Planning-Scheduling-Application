@@ -1,0 +1,118 @@
+import copy
+
+from m4.process.Lot import Lot
+from .AbstractRouteNode import AbstractRouteNode
+from ..process.AbstractRouteNode import AbstractRouteNode
+from ..backward.BackwardStepPlan import BackwardStepPlan
+
+
+class Router(object):
+    """
+        Route Object
+        Lot Control
+    """
+    # route_location: AbstractRouteNode
+
+    def __init__(self):
+        self.route_id: str = ""         # Current Location 기준
+        self.plant_id: str = ""
+        self.route_location: AbstractRouteNode = None   # Route Location
+        self.bom_route_dict: dict = {}  # Bom Route
+        self._to_locations: list = []
+        self._production_orders: list = []
+
+    def init(self, route_id: str, route_location: AbstractRouteNode, bom_route_dict: dict):
+        self.route_id = route_id
+        self.route_location = route_location
+        self.bom_route_dict = bom_route_dict
+        self._init_to_locations()
+
+    # def check_availability(self, arg):
+    #     process: Process = FactoryManager.instance().get_process(process_id="...")
+    #     if process is None:
+    #         pass
+    #     else:
+    #         resource: Resource = process.get_resource(resource_id="...")
+
+    def init_production_orders(self, production_orders: list):
+        self._production_orders = production_orders
+
+    def run(self):
+        """
+
+        :return:
+        """
+        print(f"\t\t\tRouter {self.route_id} Running")
+        prior_node: AbstractRouteNode = self.route_location
+        post_nodes: list = self._to_locations
+
+        # Pseudo Code
+        print(f"\t\t\t\tRunning Post Nodes...")
+        for post_node in post_nodes:
+            post_node.run()
+        print(f"\t\t\t\tRunning Prior Nodes...")
+        prior_node.run()
+        print(f"\t\t\t\tChecking Post Nodes...")
+        for post_node in post_nodes:
+            post_node.check()
+        print(f"\t\t\t\tPutting Item to Post Nodes...")
+        for post_node in post_nodes:
+            post_node.put(item=prior_node.fetch())
+
+    def _init_to_locations(self):
+        """
+
+        :return:
+        """
+        self._to_locations = list(set([val[1] for val in self.bom_route_dict.values()]))
+
+    def _resize_lot(self, lot: Lot):
+        """
+
+        :param lot: lot Object Data
+        :return: resizing 한 lot list
+        """
+        process = self.bom_route_dict[lot.curr_loc_id][1]
+        check, min_lot_size, max_lot_size = process.check_need_to_resize_lot(lot=lot)
+
+        if check == False:
+            return [lot]
+
+        else:
+            quotient = int(lot.qty // max_lot_size)
+            remainder = lot.qty % max_lot_size
+            resized_lot_list = []
+
+            for i in range(quotient):
+                temp_lot = copy.copy(lot)
+                temp_lot.id = lot.id + "_" + str(i+1)
+                temp_lot.qty = max_lot_size
+                resized_lot_list.append(temp_lot)
+
+            # 나머지 lot 추가 처리
+            if remainder > 0:
+                temp_lot = copy.copy(lot)
+                if remainder < min_lot_size:
+                    temp_lot.id = lot.id + "_" + str(quotient + 1)
+                    temp_lot.qty = min_lot_size
+                    resized_lot_list.append(temp_lot)
+                else:
+                    temp_lot.id = lot.id + "_" + str(quotient + 1)
+                    resized_lot_list.append(temp_lot)
+
+        return resized_lot_list
+
+    def transfer(self):
+        # 다음 단계로 갈 수 있는 이동 가능 항목을 찾는다(우선순위가 달린 이동 가능 항목)
+        # check next location available 결과가 리스트
+        # 생산 우선순위를 결정
+        # fetch item
+        # put item (Inventory : stocks에 item을 추가, Process : Resource에 ProcessLot을 생성(ProcessLot안에 Lot이 존재)
+        pass
+
+    def get_next_locations(self):
+        """
+
+        :return:
+        """
+        return self._to_locations

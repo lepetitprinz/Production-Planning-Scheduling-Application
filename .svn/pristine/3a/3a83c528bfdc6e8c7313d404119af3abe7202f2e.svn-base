@@ -1,0 +1,139 @@
+
+import datetime
+from abc import *
+
+from m4.util.TimeUtility import TimeUtility
+
+
+class AbstractTimeConstraint(metaclass=ABCMeta):
+    """
+    Duration Object
+    Calendar (비가용 계획) 인스턴스가 가질
+    비가용 계획 구간 정보 리스트는 Duration 인스턴스(들)로 구성
+    Duration 처리 관련 속성 및 동작들이 정의됨
+    """
+
+    # Duration 클래스 공통 Static 변수들
+    staticVar: object = None  # Comment
+
+    def __init__(self):
+        """
+        생성자 : Duration 클래스를 상속받는 자손 클래스들이 공통으로 가질 멤버 변수들
+        """
+
+        # 2-1. Public
+        self.id: str = ""                           # Duration ID
+
+        # 2-2. Private
+        self._priority: int = 0
+        self._apply_start_date: datetime.datetime = None
+        self._apply_end_date: datetime.datetime = None
+        self._start_date: datetime.datetime = None
+        self._end_date: datetime.datetime = None
+        self._intervals: list = []                  # 비가용 계획 구간 리스트 [(시작 시간, 종료 시간)] : DailyOnce 는 하나의 튜플만 가짐
+
+    def init(self,
+             id_str: str,
+             priority: int,
+             apply_start_date: datetime.datetime,
+             apply_end_date: datetime.datetime,
+             start_date: datetime.datetime,
+             end_date: datetime.datetime
+             ):
+        """
+
+        :param id_str:
+        :param priority:
+        :param apply_start_date:
+        :param apply_end_date:
+        :param start_date:
+        :param end_date:
+        :return:
+        """
+
+        # 2-1. Public
+        self.id = id_str
+
+        # 2-2. Private
+        self._set_priority(priority=priority)
+        self._set_apply_start_date(apply_start_date=apply_start_date)
+        self._set_apply_end_date(apply_end_date=apply_end_date)
+        self._set_start_date(start_date=start_date)
+        self._set_end_date(end_date=end_date)
+
+        self._build_intervals()
+
+        self.clip_duration()
+
+    @abstractmethod
+    def _build_intervals(self):
+        pass
+
+    def clip_duration(self):
+        """
+
+        :return:
+        """
+
+        self._intervals[0] = (
+            max([self._intervals[0][0], self._apply_start_date]),
+            self._intervals[0][1]
+        )
+        self._intervals[-1] = (
+            self._intervals[-1][0],
+            min([self._intervals[-1][1], self._apply_end_date])
+        )
+
+    def get_current_interval(self, run_time: datetime.datetime) -> tuple:
+        """
+
+        :param run_time:
+        :return:
+        """
+        for obj in self._intervals:
+            interval: tuple = obj
+            if run_time == interval[1]:
+                pass
+            elif interval[0] <= run_time <= interval[1]:
+                return interval
+        return ()
+
+    def _set_priority(self, priority: int):
+        """
+
+        :param priority:
+        :return:
+        """
+        self._priority = priority
+
+    def _set_apply_start_date(self, apply_start_date: datetime.datetime):
+        """
+
+        :param apply_start_date:
+        :return:
+        """
+        self._apply_start_date = apply_start_date
+
+    def _set_apply_end_date(self, apply_end_date: datetime.datetime):
+        """
+
+        :param apply_end_date:
+        :return:
+        """
+        self._apply_end_date = apply_end_date
+
+    def _set_start_date(self, start_date: datetime.datetime):
+        """
+
+        :param start_date:
+        :return:
+        """
+        self._start_date = start_date
+
+    def _set_end_date(self, end_date: datetime.datetime):
+        """
+
+        :param end_date:
+        :return:
+        """
+        self._end_date = end_date

@@ -1,0 +1,140 @@
+from m4.entity.Factory import Factory
+from m4.dao.AbstractSession import AbstractSession
+from m4.dao.FactoryDAO import FactoryDAO
+from m4.dao.FactoryScheduleDAO import FactoryScheduleDAO
+from m4.dao.BomDAO import BomDAO
+from ..dao.CalendarDAO import CalendarDAO
+from ..dao.InventoryDAO import InventoryDAO
+from ..dao.ProcessDAO import ProcessDAO
+from ..dao.BorDAO import BorDAO
+from ..dao.RouteDAO import RouteDAO
+from ..util.DateTimeUtility import DateTimeUtility
+from ..manager.ScheduleConstraint import ScheduleConstraint
+from ..entity.Inventory import Inventory
+from ..entity.Process import Process
+from m4.entity.Factory import Factory
+
+from m4.dao.DemandDAO import DemandDAO
+
+class FactoryBuilder:
+
+    @classmethod
+    def build(cls, session: AbstractSession):
+
+        instance: Factory = Factory()
+
+        factory_info, bom, factory_schedule_constraints, inventory_master, process_master, bor_master, route_master, work_order_master = \
+            cls.get_dao_data(session)
+
+        factory_schedule_constraints = cls._init_calendars(factory_schedule_constraints=factory_schedule_constraints)
+        inventories = cls._init_inventories(inventory_master=inventory_master)
+        processes = cls._init_processes(process_master=process_master, bor_master=bor_master)
+        routes = []
+
+        instance.init(info=factory_info,
+                      factory_schedule_constraints=factory_schedule_constraints,
+                      inventories=inventories,
+                      processes=processes,
+                      route_master=route_master,
+                      work_order_master=work_order_master)
+
+        return instance
+
+    @classmethod
+    def _init_calendars(cls, factory_schedule_constraints: list):
+        """
+
+        :param factory_schedule_constraints:
+        :return:
+        """
+        _schedule_constraints: dict = {}
+        for row in factory_schedule_constraints:
+            if row['CAL_ID'] in _schedule_constraints.keys():
+                calendar: ScheduleConstraint = _schedule_constraints[row['CAL_ID']]
+            else:
+                calendar = ScheduleConstraint()
+                calendar.init(id_str=row['CAL_ID'],
+                              location='FACTORY')
+            calendar.append_duration_info(id_str=row['DUR_ID'],
+                                          priority=row['DUR_PRIORITY'],
+                                          resume_type=row['DUR_TYPE'],
+                                          cycle_type=row['DUR_CYCLE_TYPE'],
+                                          apply_start_date=row['DUR_APPLY_START_DATE'],
+                                          apply_end_date=row['DUR_APPLY_END_DATE'],
+                                          start_date=row['DUR_START_DATE'],
+                                          end_date=row['DUR_END_DATE'])
+            _schedule_constraints[row['CAL_ID']] = calendar
+        return _schedule_constraints
+
+    @classmethod
+    def _init_inventories(cls, inventory_master: list):
+        """
+
+        :param inventory_master:
+        :return:
+        """
+        _inventories: dict = {}
+        for info in inventory_master:
+            if info['INV_ID'] in _inventories.keys():
+                inventory: Inventory = _inventories[info['INV_ID']]
+            else:
+                inventory = Inventory()
+                inventory.init(info=info)
+            _inventories[info['INV_ID']] = inventory
+        return _inventories
+
+    @classmethod
+    def _init_processes(cls, process_master: list, bor_master: list):
+        """
+
+        :param process_master:
+        :return:
+        """
+        _processes: dict = {}
+        for proc_info in process_master:
+            if proc_info['PROC_ID'] in _processes.keys():
+                process: Process = _processes[proc_info['PROC_ID']]
+            else:
+                process = Process()
+                process.init(info=proc_info)
+            tmp_bor: list = [row for row in bor_master if row['PROC_ID'] == process.id]
+            for resource_info in tmp_bor:
+                process.append_resource(info=resource_info)
+            _processes[proc_info['PROC_ID']] = process
+        return _processes
+
+    @classmethod
+    def get_dao_data(cls, session: AbstractSession):
+
+        factory_dao: FactoryDAO = FactoryDAO.instance()
+        factory_info = factory_dao.map(factory_dao.select_one(session=session))[0]
+
+        bom_dao: BomDAO = BomDAO.instance()
+        bom = bom_dao.map(bom_dao.select_bom_routing(session=session))
+
+        # FactoryCalendarDao 로부터 정보 받아오기
+        factory_schedule_constraints_dao: FactoryScheduleDAO = FactoryScheduleDAO.instance()
+        factory_schedule_constraints = factory_schedule_constraints_dao.map(factory_schedule_constraints_dao.select_list(session=session))
+
+        # InventoryDAO로 부터 정보 받아오기
+        inventory_dao: InventoryDAO = InventoryDAO.instance()
+        inventory_master = inventory_dao.map(inventory_dao.select_master(session=session))
+
+        # ProcessDAO로 부터 정보 받아오기
+        process_dao: ProcessDAO = ProcessDAO.instance()
+        process_master = process_dao.map(process_dao.select_master(session=session))
+
+        # BorDAO로 부터 정보 받아오기
+        bor_dao: BorDAO = BorDAO.instance()
+        bor_master = bor_dao.map(bor_dao.select_bor(session=session))
+
+        # RouteDAO로 부터 정보 받아오기
+        route_dao: RouteDAO = RouteDAO.instance()
+        route_master = route_dao.map(route_dao.select_route_master(session=session))
+
+        # DemandDAO로 부터 정보 받아오기
+        demand_dao: DemandDAO = DemandDAO.instance()
+        work_order_master = demand_dao.map(demand_dao.select_demand_master(session=session))
+
+        return factory_info, bom, factory_schedule_constraints, inventory_master, \
+               process_master, bor_master, route_master, work_order_master

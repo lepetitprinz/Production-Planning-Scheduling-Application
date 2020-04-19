@@ -1,0 +1,32 @@
+from m4.entity.Factory import Factory
+from m4.dao.AbstractSession import AbstractSession
+from m4.dao.FactoryDAO import FactoryDAO
+from m4.dao.BomDAO import BomDAO
+from m4.dao.FactoryCalendarDAO import FactoryCalendarDAO
+from m4.entity.Factory import Factory
+
+
+class FactoryBuilder:
+
+    @classmethod
+    def build(cls, session: AbstractSession):
+
+        instance: Factory = Factory()
+
+        factory_info, bom, factory_calendar = cls.get_dao_data(session)
+
+        instance.init(info=factory_info,
+                      factory_calendar=factory_calendar)
+
+        return instance
+
+    @classmethod
+    def get_dao_data(cls, session: AbstractSession):
+
+        factory_info = FactoryDAO.instance().select_one(session=session)
+        bom = BomDAO.instance().select_bom_routing(session=session)
+
+        # FactoryCalendarDao 로부터 정보 받아오기
+        factory_calendar = FactoryCalendarDAO.instance().select_list(session=session)
+
+        return factory_info, bom, factory_calendar

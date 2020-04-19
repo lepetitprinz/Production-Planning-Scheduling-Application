@@ -1,0 +1,19 @@
+
+import datetime
+
+from m4.common.SingletonInstance import SingletonInstance
+from m4.entity.Factory import Factory
+
+
+class FactoryManager(SingletonInstance):
+
+    def __init__(self):
+        self._factory: Factory = None
+        self._optimizer: object = None
+        self._work_order: object = None
+
+    def init(self, factory: Factory):
+        self._factory = factory
+
+    def run_factory(self, run_time: dict):
+        self._factory.run(run_time=run_time)

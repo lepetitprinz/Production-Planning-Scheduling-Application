@@ -1,0 +1,52 @@
+import sys
+from m4.ApplicationConfiguration import ApplicationConfiguration
+from m4.util.LogHandler import LogHandler
+from m4.dao import DataSourceError
+from m4.dao.OracleDataSource import OracleDataSource
+from m4.FactorySimulator import FactorySimulator
+
+"""
+최상위 어플리케이션 실행 파일
+    FactorySimulator 클래스 인스턴스를 생성
+    Simulator를 실행
+"""
+
+if __name__ == '__main__':
+
+    config: ApplicationConfiguration = ApplicationConfiguration.instance()
+    config.init('m4.properties')
+
+    logHandler: LogHandler = LogHandler.instance()
+    logHandler.init(config)
+
+    logger = logHandler.get_logger()
+
+    # plan_version_id, simulation_id는 Application Launcher 실행 시 필수 입력값으로 처리
+    # 임시 설정
+    plan_version_id = "HWC_POC"
+    simulation_id = "HWC_1"
+    if plan_version_id is None:
+        logger.error("생산 일정 계획 버전이 초기화되지 않았습니다.")
+        sys.exit(1)
+    if simulation_id is None:
+        logger.error("생산 시뮬레이션 정보가 초기화되지 않았습니다.")
+        sys.exit(1)
+
+    try:
+        data_source: OracleDataSource = OracleDataSource.instance()
+        data_source.init(config)
+        config.init_code(data_source)
+
+        simulator: FactorySimulator = FactorySimulator.instance()
+        simulator.init(plan_version_id, simulation_id, config, data_source)
+
+        # Run Backward Simulation
+        # simulator.backward()
+
+        # Run Forward Simulation
+        simulator.run()
+
+    except DataSourceError as e:
+        logger.error(e)
+    finally:
+        pass

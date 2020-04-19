@@ -1,0 +1,320 @@
+
+import datetime
+
+from ..constraint.ScheduleConstraint import ScheduleConstraint
+
+
+class Factory(object):
+    """
+    Factory Object
+
+    """
+
+    def __init__(self):
+
+        # 멤버 변수 목록
+        self.id: str = ""           #
+        self.name: str = ""         #
+        self.location_id: str = ""  #
+
+        # 2-2. Private 멤버 변수 목록
+        self._schedule_constraints: dict = {}      # 공장 비가용 계획 캘린더 인스턴스 사전 {CalendarID: Calendar}
+        self._routes: dict = {}         # Route 객체 리스트 = inventory 및 process 간 연결 관계 정의
+        self._inventories: dict = {}    # Inventory 객체 리스트
+        self.processes: dict = {}      # Process 객체 리스트
+
+        # Demand
+        self._demand_list: list = []
+
+        # Route 관련
+        self._work_order_list: list = []
+        self._to_from_item_dict: dict = {}
+        self._item_to_final_item_dict: dict = {}
+
+    def init(self,
+             info: dict,
+             schedule_constraints: dict,
+             inventories: dict,
+             processes: dict,
+             work_order_list: list,
+             to_from_item_dict: dict,
+             item_to_final_item_dict: dict,
+             routes: list):
+
+        # 공장 정보 설정
+        self._init_info(info=info)
+
+        # 공장 비가용 Calendar 정보 세팅
+        self._init_schedule_constraints(schedule_constraints=schedule_constraints)
+
+        # 공장 내 Inventory 객체들을 초기화
+        self._init_inventories(inventories=inventories)
+
+        # 공장 내 Process 객체들을 초기화 : Propagate
+        self._init_processes(processes=processes)
+
+        # Work Order 정보 초기화
+        self._init_work_orders(work_order_list=work_order_list)
+
+        #
+        self._init_to_from_item_dict(to_from_item_dict=to_from_item_dict)
+
+        #
+        self._init_item_to_final_item_dict(item_to_final_item_dict=item_to_final_item_dict)
+
+        # 공장 내 Route 객체들을 초기화
+        self._init_routes(routes=routes)
+
+    def run(self, run_time: dict):
+        """
+
+        :param run_time:
+        :return:
+        """
+        print(f"\t\tFactory.run()")
+
+        if run_time['is_off_day']:
+            print(f"\t\t\t달력 시간 제약 : {run_time['is_off_day']} / {run_time['constraint_name']} / {run_time['constraint_type']}")
+        else:
+            current_calendars: dict = self._get_current_schedules(run_time=run_time['date'])
+            if len(current_calendars) > 0:
+                print(f"\t\t\t공장 시간 제약 : {current_calendars}")
+            else:
+                print(f"\t\t\t시간 제약 없음")
+
+    def _get_current_schedules(self, run_time: datetime.datetime):
+        """
+
+        :param run_time:
+        :return:
+        """
+        calendars: dict = {}
+        for obj in self._schedule_constraints.values():
+            calendar: ScheduleConstraint = obj
+            duration_intervals: dict = calendar.get_current_durations(run_time=run_time)
+            if len(duration_intervals) > 0:
+                calendars[calendar.get_id()] = duration_intervals
+        return calendars
+
+    def _init_work_orders(self, work_order_list: list):
+        """
+
+        :param work_order_item_list:
+        :return:
+        """
+        self._work_order_list = work_order_list
+
+    def _init_to_from_item_dict(self, to_from_item_dict: dict):
+        """
+
+        :param to_from_item_dict:
+        :return:
+        """
+        self._to_from_item_dict = to_from_item_dict
+
+    def _init_item_to_final_item_dict(self, item_to_final_item_dict: dict):
+        """
+
+        :param item_to_final_item_dict:
+        :return:
+        """
+        self._item_to_final_item_dict = item_to_final_item_dict
+
+    def _init_routes(self, routes: list):
+        """
+
+        :param routes:
+        :return:
+        """
+        self._routes = routes
+
+    def _create_to_from_item_dict(self, route_master: list):
+        """
+        각 제품의 To From 정보를 Dictionay 형태로 만드는 처리
+        :param route_master: Route Master Data
+        :return: None
+        """
+        to_from_item_dict = {}
+        for route in route_master:
+            if (route['NEXT_ITEM_ID'] not in to_from_item_dict.keys()) and (route['NEXT_ITEM_ID'] != route['ITEM_ID']):
+                to_from_item_dict.update({route['NEXT_ITEM_ID']: route['ITEM_ID']})
+        self._to_from_item_dict = to_from_item_dict
+
+    def _create_work_order_route(self, route_master):
+        """
+
+        :param route_master: Route Master Data
+        :return:
+        """
+        work_order_item_list = self._work_order_list
+
+        item_route_list = []
+        item_route_error_list = []
+
+        for work_order_item in work_order_item_list:
+            work_order_route = [work_order_item]
+            while "311110000000" not in work_order_route[-1]:   # 311110000000: RM ITEM_ID (hard coding)
+                if work_order_route[-1] in self._to_from_item_dict.keys():
+                    work_order_route.append(self._to_from_item_dict[work_order_route[-1]])
+                else:
+                    item_route_error_list.append(work_order_route)
+                    break
+            item_route_list.append(work_order_route)
+
+        # 반제품 item id ~ final item id에 대한 Dictionary 생성
+        self._create_item_to_final_item_dict(item_route_list=item_route_list)
+
+        return item_route_list, item_route_error_list
+
+    def _create_item_to_final_item_dict(self, item_route_list: list):
+        """
+        반제품 item id ~ final item id에 대한 Dictionary 생성
+        :param item_route_list: 정상적인 item route 정보
+        :return: None
+        """
+        item_to_final_item_dict = {}
+
+        for item_route in item_route_list:
+            for item in item_route[1:]:
+                if item not in item_to_final_item_dict.keys():
+                    item_to_final_item_dict.update({item: item_route[0]})
+        self._item_to_final_item_dict = item_to_final_item_dict
+
+    def _create_route_group(self, route_master: list):
+        """
+
+        :param route_master: Route Master Data
+        :return route_loc_group_dict:
+        """
+        route_loc_group_dict = {}
+
+        for route in route_master:
+            if route['CURR_LOC_ID'] not in route_loc_group_dict.keys():
+                route_loc_group_dict.update({route['CURR_LOC_ID']: [route]})
+            else:
+                temp_list = route_loc_group_dict[route['CURR_LOC_ID']]
+                temp_list.append(route)
+                route_loc_group_dict[route['CURR_LOC_ID']] = temp_list
+
+        return route_loc_group_dict
+
+    def _create_bom_route_dict(self, bom_route_list: list):
+        """
+
+        :param bom_route_list:
+        :return:
+        """
+        bom_route_dict = {}
+        for route in bom_route_list:
+            # try:
+            #     final_item_dict = self._item_to_final_item_dict[route['ITEM_ID']]
+            #     bom_route_dict.update({(route['ITEM_ID'], final_item_dict):
+            #                                (route['NEXT_ITEM_ID'], route['NEXT_LOC_ID'])})
+            # except:
+            #     pass
+            bom_route_dict.update({route['ITEM_ID']: (route['NEXT_ITEM_ID'], route['NEXT_LOC_ID'])})
+
+        return bom_route_dict
+
+    def _init_processes(self, processes: dict):
+        """
+
+        :param process_master:
+        :return:
+        """
+        self.processes = processes
+
+    def _create_location_route_list(self, route_master: list):
+        """
+
+        :param route_master:
+        :return: location_route
+        """
+        to_from_location_dict = {}
+        for route in route_master:
+            if route['NEXT_LOC_ID'] not in to_from_location_dict.keys():
+                to_from_location_dict.update({route['NEXT_LOC_ID']: route['CURR_LOC_ID']})
+
+        location_route = ['SALES']  # 마지막 Route (Hard Coding)
+        while location_route[-1] != 'RM':   # Location Start Route (Hard Coding)
+            if location_route[-1] in to_from_location_dict.keys():
+                location_route.append(to_from_location_dict[location_route[-1]])
+
+        route_naming_dict = {}
+        idx = 0
+        for location in location_route:
+            route_naming_dict.update({location: 'ROUTE' + str(len(location_route) - idx)})
+            idx += 1
+
+        return route_naming_dict
+
+    def _init_inventories(self, inventories: dict):
+        """
+
+        :param inventories:
+        :return:
+        """
+        self._inventories = inventories
+
+    def _init_info(self, info: dict):
+        """
+
+        :param info:
+        :return:
+        """
+
+        self.id = info['PLANT_ID']
+        self.name = info['PLANT_NM']
+        self.location_id = info['LOC_ID']
+
+    def _init_schedule_constraints(self, schedule_constraints: dict):
+        """
+
+        :param schedule_constraints:
+        :return:
+        """
+        self._schedule_constraints = schedule_constraints
+
+    def get_route(self, route_id: str):
+        """
+
+        :param route_id:
+        :return:
+        """
+        if route_id in self._routes.keys():
+            return self._routes[route_id]
+        else:
+            return None
+
+    def get_process(self, process_id: str):
+        """
+
+        :param process_id:
+        :return:
+        """
+        if process_id in self.processes.keys():
+            return self.processes[process_id]
+        else:
+            return None
+
+    def get_inventory(self, inventory_id: str):
+        """
+
+        :param inventory_id:
+        :return:
+        """
+        if inventory_id in self._inventories.keys():
+            return self._inventories[inventory_id]
+        else:
+            return None
+
+    def get_calendar(self, calendar_id: str):
+        """
+
+        :param calendar_id:
+        :return:
+        """
+        if calendar_id in self._schedule_constraints.keys():
+            return self._schedule_constraints[calendar_id]
+        else:
+            return None

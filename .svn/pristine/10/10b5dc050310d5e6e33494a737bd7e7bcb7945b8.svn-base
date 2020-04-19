@@ -1,0 +1,223 @@
+
+import datetime
+
+from ..constraint.AbstractTimeConstraint import AbstractTimeConstraint
+from ..constraint.ScheduleConstraint import ScheduleConstraint
+from ..operator.Inventory import Inventory
+
+
+class Factory(object):
+    """
+    Factory Object
+
+    """
+
+    def __init__(self):
+
+        # 멤버 변수 목록
+        self.id: str = ""           #
+        self.name: str = ""         #
+        self.location_id: str = ""  #
+
+        # 2-2. Private 멤버 변수 목록
+        self._schedule_constraints: ScheduleConstraint = None      # 공장 비가용 계획 캘린더 인스턴스 사전 {CalendarID: Calendar}
+        self._routes: dict = {}         # Route 객체 리스트 = inventory 및 process 간 연결 관계 정의
+        self._inventories: dict = {}    # Inventory 객체 리스트
+        self.processes: dict = {}      # Process 객체 리스트
+
+        # Demand
+        self._demand_list: list = []
+
+        # Route 관련
+        self._work_order_list: list = []
+        self._to_from_item_dict: dict = {}
+        self._item_to_final_item_dict: dict = {}
+
+    def init(self,
+             info: dict,
+             schedule_constraints: ScheduleConstraint,
+             inventories: dict,
+             processes: dict,
+             work_order_list: list,
+             work_order_items: list,
+             to_from_item_dict: dict,
+             item_to_final_item_dict: dict,
+             routes: list):
+
+        # 공장 정보 설정
+        self._init_info(info=info)
+
+        # 공장 비가용 Calendar 정보 세팅
+        self._init_schedule_constraints(schedule_constraints=schedule_constraints)
+
+        # 공장 내 Inventory 객체들을 초기화
+        self._init_inventories(inventories=inventories)
+
+        # 공장 내 Process 객체들을 초기화 : Propagate
+        self._init_processes(processes=processes)
+
+        # 공장 내 Route 객체들을 초기화
+        self._init_routes(routes=routes)
+
+        # Work Order 정보 초기화
+        self._init_work_orders(work_order_list=work_order_list)
+
+        #
+        self._init_to_from_item_dict(to_from_item_dict=to_from_item_dict)
+
+        #
+        self._init_item_to_final_item_dict(item_to_final_item_dict=item_to_final_item_dict)
+
+        # 최초 출발지 Inventory 에 Work Order Item 인스턴스들을 할당
+        self._init_initial_items(work_order_items=work_order_items)
+
+    def run(self, run_time: dict, time_constraint: object = None):
+        """
+
+        :param run_time:
+        :param time_constraint:
+        :return:
+        """
+        pass
+
+    def get_time_constraints(self, run_time: dict):
+        """
+
+        :param run_time:
+        :return:
+        """
+
+        if run_time['is_off_day']:
+            return run_time
+        else:
+            current_time_constraint: AbstractTimeConstraint = self._get_current_schedules(run_time=run_time['date'])
+            return current_time_constraint
+
+    def _get_current_schedules(self, run_time: datetime.datetime):
+        """
+
+        :param run_time:
+        :return:
+        """
+
+        return self._schedule_constraints.check(run_time)
+
+    def _init_work_orders(self, work_order_list: list):
+        """
+
+        :param work_order_item_list:
+        :return:
+        """
+        self._work_order_list = work_order_list
+
+    def _init_initial_items(self, work_order_items: list):
+        """
+
+        :param work_order_items:
+        :return:
+        """
+        rm: Inventory = self._get_initial_operator()
+        for item in work_order_items:
+            rm.put(item=item)
+
+    def _get_initial_operator(self):
+        """
+        <Hard Coding>
+        구현 필요
+        self._routes 리스트로부터 가장 출발점 노드들을 반환
+        :return:
+        """
+        return [self._inventories[inv_id] for inv_id in self._inventories.keys()
+                if inv_id == "RM"][0]
+
+    def _init_to_from_item_dict(self, to_from_item_dict: dict):
+        """
+
+        :param to_from_item_dict:
+        :return:
+        """
+        self._to_from_item_dict = to_from_item_dict
+
+    def _init_item_to_final_item_dict(self, item_to_final_item_dict: dict):
+        """
+
+        :param item_to_final_item_dict:
+        :return:
+        """
+        self._item_to_final_item_dict = item_to_final_item_dict
+
+    def _init_routes(self, routes: list):
+        """
+
+        :param routes:
+        :return:
+        """
+        self._routes = routes
+
+    def _init_processes(self, processes: dict):
+        """
+
+        :param process_master:
+        :return:
+        """
+        self.processes = processes
+
+    def _init_inventories(self, inventories: dict):
+        """
+
+        :param inventories:
+        :return:
+        """
+        self._inventories = inventories
+
+    def _init_info(self, info: dict):
+        """
+
+        :param info:
+        :return:
+        """
+
+        self.id = info['PLANT_ID']
+        self.name = info['PLANT_NM']
+        self.location_id = info['LOC_ID']
+
+    def _init_schedule_constraints(self, schedule_constraints: ScheduleConstraint):
+        """
+
+        :param schedule_constraints:
+        :return:
+        """
+        self._schedule_constraints = schedule_constraints
+
+    def get_route(self, route_id: str):
+        """
+
+        :param route_id:
+        :return:
+        """
+        if route_id in self._routes.keys():
+            return self._routes[route_id]
+        else:
+            return None
+
+    def get_process(self, process_id: str):
+        """
+
+        :param process_id:
+        :return:
+        """
+        if process_id in self.processes.keys():
+            return self.processes[process_id]
+        else:
+            return None
+
+    def get_inventory(self, inventory_id: str):
+        """
+
+        :param inventory_id:
+        :return:
+        """
+        if inventory_id in self._inventories.keys():
+            return self._inventories[inventory_id]
+        else:
+            return None

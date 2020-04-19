@@ -1,0 +1,40 @@
+import datetime
+
+from m4.backward.BackwardStepPlan import BackwardStepPlan
+
+class BackwardWorkOrder(object):
+
+    def __init__(self):
+        self.work_order_id: str = ''
+        self.final_item_id: str = ''
+        self.location_id: str = ''
+        self.work_order_qty: int = 0
+
+        self.due_date: datetime.datetime = 0
+
+    def init(self):
+
+        self.location_id = self._get_end_location()
+
+        self._create_backward_step_plan_list()
+
+        pass
+
+    def _get_end_location(self):
+        pass
+
+    def _create_backward_step_plan_list(self):
+        backward_step_plan_list = []
+        step = 1
+        remain_order_qty = self.work_order_qty
+        lpst = self.due_date
+
+        # Calculatie LPST
+
+
+
+
+    def _get_previous_location(self, next_location: str):
+        previous_location = ''
+
+        return previous_location

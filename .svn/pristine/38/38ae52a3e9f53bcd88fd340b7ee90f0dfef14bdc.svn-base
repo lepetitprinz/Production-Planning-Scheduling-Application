@@ -1,0 +1,105 @@
+import datetime
+
+# from m4.backward.BackwardManager import BackwardManager
+from m4.backward.BackwardStepPlan import BackwardStepPlan
+
+class BackwardWorkOrder(object):
+
+    def __init__(self):
+        # self.backwardManager: BackwardManager = None
+        self.work_order_id: str = ''
+        self.finished_item_id: str = ''
+        self.location_id: str = ''
+        self.work_order_qty: int = 0
+        self.priority: int = 1
+        self.dtl_priority: int = 1
+
+        self.due_date: int = 0
+        self.item_route_chain_dict: dict = {}
+
+    def init(self,
+             # backward_Manager:BackwardManager,
+             work_order: dict,
+             item_route_chain_dict: dict):
+        """
+
+        :return:
+        """
+        # self.backwardManager = backward_Manager
+        self.work_order_id = work_order['WORK_ORDER_ID']
+        self.finished_item_id = work_order['ORDER_ITEM_ID']
+        self.location_id = 'SALES'      # Hard Coding
+        # self.location_id = self._get_end_location()
+        self.work_order_qty = work_order['ORDER_QTY']
+        self.priority = work_order['PRIORITY']
+        self.dtl_priority = work_order['DTL_PRIORITY']
+        self.due_date = work_order['DUE_DT']
+
+        self.item_route_chain_dict = item_route_chain_dict
+
+    def process(self):
+        """
+
+        :return:
+        """
+        self.backward_step_plan_list = self._create_backward_step_plan_list()
+
+    def _create_backward_step_plan_list(self):
+        backward_step_plan_list = []
+        step = 1
+        curr_loc_id = self.location_id
+        curr_item_id = self.finished_item_id
+        remain_production_qty = self.work_order_qty
+
+        # Set End Location Step
+        plan: BackwardStepPlan = BackwardStepPlan()
+        plan.init(work_order_id=self.work_order_id,
+                  finished_item_id=self.finished_item_id,
+                  step=step,
+                  location_id=curr_loc_id,
+                  item_id=curr_item_id,
+                  work_order_qty=self.work_order_qty)
+
+        backward_step_plan_list.append(plan)
+
+        for i in range(len(self.item_route_chain_dict)):
+            plan: BackwardStepPlan = BackwardStepPlan()
+            step += 1
+            (curr_loc_id, curr_item_id) = self.item_route_chain_dict[(curr_loc_id, curr_item_id)]
+
+            # Location 및 Item 정보 setting
+            plan.init(work_order_id=self.work_order_id,
+                      finished_item_id=self.finished_item_id,
+                      work_order_qty=self.work_order_qty,
+                      step=step,
+                      location_id=curr_loc_id,
+                      item_id=curr_item_id,
+                      )
+            # Pegging
+            # peg_qty = 0
+            peg_qty = self._pegging(location_id=curr_loc_id, item_id=curr_item_id)
+            remain_production_qty -= peg_qty
+            plan.peg(peg_qty=peg_qty, remain_production_qty=remain_production_qty)
+
+            backward_step_plan_list.append(plan)
+
+        return backward_step_plan_list
+
+    def _pegging(self, location_id: str, item_id: str):
+        peg_qty = 0
+        peg_available_item_list = []
+        # peg_available_item_list = self._get_peg_available_item(location_id=location_id,item_id=item_id)
+
+        if peg_available_item_list == []:
+            return peg_qty
+        else:
+            # 계산 필요
+            return peg_qty
+
+    # def _get_peg_available_item(self, location_id, item_id):
+        # return self.backwardManager.stock_wip_by_loc_dict[(location_id, item_id)]
+
+    def _get_end_location(self):
+        end_location = ''
+
+        return end_location

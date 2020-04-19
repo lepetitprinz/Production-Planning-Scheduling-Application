@@ -1,0 +1,14 @@
+[DatabaseSource]
+database.connection.ip=255.255.255.10
+database.connection.port=22
+database.connection.sid=XE
+database.scheme.name=unitTest
+database.scheme.pwd=1234
+database.table.demand=DEMAND
+database.table.engineconfig=ENGINECONFIG
+
+[FileSource]
+file.directory=/home/csh/Documents/DataSource
+file.demand=demand.csv
+file.factory=factory.csv
+file.engineconfig=engineconfig.csv

@@ -1,0 +1,54 @@
+
+import numpy as np
+
+from ..operator.Resource import Resource
+from ..manager.CapaConstraint import CapaConstraint
+
+
+class Process(object):
+    """
+    Inventory Object
+    각 공정 단계 별 중간 제품 보관 창고를 구현한 클래스
+    Route 로부터 Lot 이 할당되었을 상황에서의
+    실제 처리 동작을 수행하도록 설계
+    """
+
+    # Inventory 인스턴스들이 공유할 Static 변수들
+    staticVar2: object = None                           # Comment
+
+    # Static Constants
+    CONSTANT_VARIABLE2: object = None                   # Comment
+
+    def __init__(self):
+        """
+        생성자 :
+        """
+
+        # 2-1. Public
+        self.id: str = ""                       # Inventory 일련번호
+        self.name: str = ""                     # Inventory 명칭
+
+        # 2-2. Private
+        self.resources: dict = {}              # Resource 인스턴스 목록
+
+    def init(self, info: dict):
+        self.id = info['PROC_ID']
+        self.name = info['PROC_NM']
+
+    def append_resource(self, info: dict):
+        resource: Resource = self.get_resource(resource_id=info['RESC_ID'])
+        if resource is None:
+            resource = Resource()
+            resource.init(info=info)
+        self.resources[info['RESC_ID']] = resource
+
+    def get_resource(self, resource_id: str):
+        """
+
+        :param resource_id:
+        :return:
+        """
+        if resource_id in self.resources.keys():
+            return self.resources[resource_id]
+        else:
+            return None

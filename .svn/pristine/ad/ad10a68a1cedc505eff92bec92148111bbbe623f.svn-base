@@ -1,0 +1,90 @@
+
+from m4.entity.ProcessLot import ProcessLot
+
+
+class Resource(object):
+    """
+    Resource Object
+    각 공정 단계 별 생산 장비를 구현한 클래스
+    Process 에 종속되며
+    Route 로부터 자신이 속한 Process 에 작업이 할당되었을 경우
+    실제 처리 동작을 수행하도록 설계
+    """
+
+    #  Static 변수들
+    staticVar: object = None                    # Comment
+
+    # Static Constants
+    CONSTANT_VARIABLE: object = None            # Comment
+
+    def __init__(self):
+        """
+        생성자 :
+        """
+
+        # 2-1. Public
+        self.id: str = ""                       # Resource 일련번호
+        self.status: str = ""                   # Resource 의 현재 상태. PROC / IDLE / DOWN
+
+        # 2-2. Private
+        self._priority: int = 0                     #
+        self._production_efficiency: float = 0.0    #
+        self._process_precision: float = 0.0        #
+        self._min_lot_size: float = 0.0             #
+        self._max_lot_size: float = 0.0             #
+        self._process_time: float = 0.0             #
+        self._pre_process_setup_time: float = 0.0   #
+        self._post_process_wait_time: float = 0.0   #
+
+        self._constraints: list = []
+        self._process_lot: ProcessLot = None        # Resource 의 실제 작업을 수행하는 객체
+
+    def init(self, info: dict):
+        """
+
+        :param info:
+        :return:
+        """
+        print(info)
+
+        self.id = info['RESC_ID']
+        self.status = "IDLE"
+
+        self._set_priority(priority=info['PRIORITY'])
+        self._set_production_efficiency(production_efficiency=info['PROD_EFFCNCY'])
+        self._set_process_precision(process_precision=info['PROC_PRECSN'])
+        self._set_min_lot_size(min_lot_size=info['MIN_LOT_SIZE'])
+        self._set_max_lot_size(max_lot_size=info['MAX_LOT_SIZE'])
+        self._set_process_time(process_time=info['PROC_TM'])
+        self._set_pre_process_setup_time(pre_process_setup_time=info['PRE_PROC_SETUP_TM'])
+        self._set_post_process_wait_time(post_process_wait_time=info['POST_PROC_WAIT_TM'])
+
+        self._init_process_lot()
+
+    def _init_process_lot(self):
+        self._process_lot = ProcessLot()
+        self._process_lot.init()
+
+    def _set_priority(self, priority: int):
+        self._priority = priority
+
+    def _set_production_efficiency(self, production_efficiency: float):
+        self._production_efficiency = production_efficiency
+
+    def _set_process_precision(self, process_precision: float):
+        self._process_precision = process_precision
+
+    def _set_min_lot_size(self, min_lot_size: float):
+        self._min_lot_size = min_lot_size
+
+    def _set_max_lot_size(self, max_lot_size: float):
+        self._max_lot_size = max_lot_size
+
+    def _set_process_time(self, process_time: float):
+        self._process_time = process_time
+
+    def _set_pre_process_setup_time(self, pre_process_setup_time: float):
+        self._pre_process_setup_time = pre_process_setup_time
+
+    def _set_post_process_wait_time(self, post_process_wait_time: float):
+        self._post_process_wait_time = post_process_wait_time

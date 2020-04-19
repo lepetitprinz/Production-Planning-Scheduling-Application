@@ -1,0 +1,39 @@
+
+import datetime
+
+from m4.process.Item import Item
+from m4.process.ProcessLot import ProcessLot
+from m4.process.Runtime import Runtime
+
+
+if __name__ == '__main__':
+
+    items: list = []
+
+    process_lot: ProcessLot = ProcessLot()
+    process_lot.init(
+        info={
+            '': 1
+        }
+    )
+
+    for i in range(10):
+        items.append(Item())
+
+    for i in range(10):
+        process_lot.put(run_time=Runtime(item=items[i],
+                                         time_index=0,
+                                         date=datetime.datetime(2020, 4, 17),
+                                         length=3))
+
+    process_lot.run()
+    process_lot.run()
+    process_lot.run()
+    process_lot.run()
+    process_lot.run()
+    process_lot.run()
+    process_lot.run()
+    process_lot.run()
+    process_lot.run()
+
+    print("DEBUGGING POINT")

@@ -1,0 +1,109 @@
+
+import datetime
+
+from m4.dao.FactoryCalendarDAO import FactoryCalendarDAO
+from m4.manager.ScheduleConstraint import ScheduleConstraint
+from m4.util.ConverterUtility import ConverterUtility
+
+
+class Factory(object):
+    """
+    Factory Object
+
+    """
+
+    def __init__(self):
+
+        # 멤버 변수 목록
+        self.id: str = ""           #
+        self.name: str = ""         #
+        self.location_id: str = ""  #
+
+        # 2-2. Private
+        self._calendars: dict = {}  # 공장 비가용 계획 캘린더 인스턴스 사전 {CalendarID: Calendar}
+        self._transfers: list = []  #
+        self._processes: list = []  #
+
+    def init(self, info: dict, factory_calendar: dict):
+
+        # 공장 정보 설정
+        self._init_info(info=info)
+
+        # 공장 비가용 Calendar 정보 세팅
+        self._init_calendars(factory_calendar=factory_calendar)
+
+    def tick(self, run_time: datetime.datetime, calendar_info: dict):
+        """
+
+        :param run_time:
+        :return:
+        """
+        print(f"\t\tFactory.tick({run_time})")
+
+        print(f"\t\t\tCM_CALNDR >> {calendar_info}")
+
+        current_calendars: dict = self._get_current_calendars(run_time=run_time)
+        if len(current_calendars) > 0:
+            print(f"\t\t\t{current_calendars}")
+
+    def _get_current_calendars(self, run_time: datetime.datetime):
+        """
+
+        :param run_time:
+        :return:
+        """
+        calendars: dict = {}
+        for obj in self._calendars.values():
+            calendar: ScheduleConstraint = obj
+            duration_intervals: dict = calendar.get_current_durations(run_time=run_time)
+            if len(duration_intervals) > 0:
+                calendars[calendar.get_id()] = duration_intervals
+        return calendars
+
+    def _init_info(self, info: dict):
+        """
+
+        :param info:
+        :return:
+        """
+        info: dict = ConverterUtility.dao_dict_to_list_with_dict(dao_dict=info)
+
+        self.id = info['PLANT_ID']
+        self.name = info['PLANT_NM']
+        self.location_id = info['LOC_ID']
+
+        print(info)
+
+    def _init_calendars(self, factory_calendar: dict):
+        """
+
+        :param factory_calendar:
+        :return:
+        """
+        factory_calendar_data = ConverterUtility.dao_dict_to_list_with_dict(dao_dict=factory_calendar)
+        for row in factory_calendar_data:
+            calendar: ScheduleConstraint = self.get_calendar(calendar_id=row['CAL_ID'])
+            if calendar is None:
+                calendar = ScheduleConstraint()
+                calendar.init(id_str=row['CAL_ID'],
+                              type_str=row['DUR_TYPE'],
+                              location='FACTORY')
+            calendar.append_duration_info(id_str=row['DUR_ID'],
+                                          priority=row['DUR_PRIORITY'],
+                                          cycle_type=row['DUR_CYCLE_TYPE'],
+                                          apply_start_date=row['DUR_APPLY_START_DATE'],
+                                          apply_end_date=row['DUR_APPLY_END_DATE'],
+                                          start_date=row['DUR_START_DATE'],
+                                          end_date=row['DUR_END_DATE'])
+            self._calendars[row['CAL_ID']] = calendar
+
+    def get_calendar(self, calendar_id: str):
+        """
+
+        :param calendar_id:
+        :return:
+        """
+        if calendar_id in self._calendars.keys():
+            return self._calendars[calendar_id]
+        else:
+            return None

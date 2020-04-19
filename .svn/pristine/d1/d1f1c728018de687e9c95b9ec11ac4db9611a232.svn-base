@@ -1,0 +1,205 @@
+
+import datetime
+
+from ..dao.FactoryScheduleDAO import FactoryScheduleDAO
+from ..entity.Inventory import Inventory
+from ..entity.Process import Process
+from ..manager.Route import Route
+from ..manager.ScheduleConstraint import ScheduleConstraint
+from ..util.ConverterUtility import ConverterUtility
+
+
+class Factory(object):
+    """
+    Factory Object
+
+    """
+
+    def __init__(self):
+
+        # 멤버 변수 목록
+        self.id: str = ""           #
+        self.name: str = ""         #
+        self.location_id: str = ""  #
+
+        # 2-2. Private 멤버 변수 목록
+        self._schedule_constraints: dict = {}      # 공장 비가용 계획 캘린더 인스턴스 사전 {CalendarID: Calendar}
+        self._routes: dict = {}         # Route 객체 리스트 = inventory 및 process 간 연결 관계 정의
+        self._inventories: dict = {}    # Inventory 객체 리스트
+        self._processes: dict = {}      # Process 객체 리스트
+
+    def init(self,
+             info: dict,
+             factory_calendar: list,
+             inventory_master: list,
+             process_master: list,
+             bor_master: list,
+             route_master: list):
+
+        # 공장 정보 설정
+        self._init_info(info=info)
+
+        # 공장 비가용 Calendar 정보 세팅
+        self._init_calendars(factory_calendar=factory_calendar)
+
+        # 공장 내 Inventory 객체들을 초기화
+        self._init_inventories(inventory_master=inventory_master)
+
+        # 공장 내 Process 객체들을 초기화 : Propagate
+        self._init_processes(process_master=process_master, bor_master=bor_master)
+
+        # 공장 내 Route 객체들을 초기화
+        self._init_routes(route_master=route_master)
+
+    def run(self, run_time: dict):
+        """
+
+        :param run_time:
+        :param calendar_info:
+        :return:
+        """
+        print(f"\t\tFactory.run()")
+
+        if run_time['is_off_day']:
+            print(f"\t\t\t달력 시간 제약 : {run_time['is_off_day']} / {run_time['constraint_name']} / {run_time['constraint_type']}")
+        else:
+            current_calendars: dict = self._get_current_calendars(run_time=run_time['date'])
+            if len(current_calendars) > 0:
+                print(f"\t\t\t공장 시간 제약 : {current_calendars}")
+            else:
+                print(f"\t\t\t시간 제약 없음")
+
+    def _get_current_calendars(self, run_time: datetime.datetime):
+        """
+
+        :param run_time:
+        :return:
+        """
+        calendars: dict = {}
+        for obj in self._schedule_constraints.values():
+            calendar: ScheduleConstraint = obj
+            duration_intervals: dict = calendar.get_current_durations(run_time=run_time)
+            if len(duration_intervals) > 0:
+                calendars[calendar.get_id()] = duration_intervals
+        return calendars
+
+    def _init_routes(self, route_master: list):
+        """
+
+        :param route_master:
+        :return:
+        """
+        for route_info in route_master:
+            id_str: str = "{}_{}".format(route_info['CURR_LOC_ID'],
+                                         route_info['NEXT_LOC_ID'])
+            route: Route = self.get_route(route_id=id_str)
+            if route is None:
+                route = Route()
+                route.init(info=route_info)
+            self._routes[id_str] = route
+
+    def _init_processes(self, process_master: list, bor_master: list):
+        """
+
+        :param process_master:
+        :return:
+        """
+        for proc_info in process_master:
+            process: Process = self.get_process(process_id=proc_info['PROC_ID'])
+            if process is None:
+                process = Process()
+                process.init(info=proc_info)
+            tmp_bor: list = [row for row in bor_master if row['PROC_ID'] == process.id]
+            for resource_info in tmp_bor:
+                process.append_resource(info=resource_info)
+            self._processes[proc_info['PROC_ID']] = process
+
+    def _init_inventories(self, inventory_master: list):
+        """
+
+        :param inventory_master:
+        :return:
+        """
+        for info in inventory_master:
+            inventory: Inventory = self.get_inventory(inventory_id=info['INV_ID'])
+            if inventory is None:
+                inventory = Inventory()
+                inventory.init(info=info)
+            self._inventories[info['INV_ID']] = inventory
+
+    def _init_info(self, info: dict):
+        """
+
+        :param info:
+        :return:
+        """
+
+        self.id = info['PLANT_ID']
+        self.name = info['PLANT_NM']
+        self.location_id = info['LOC_ID']
+
+    def _init_calendars(self, factory_calendar: list):
+        """
+
+        :param factory_calendar:
+        :return:
+        """
+        for row in factory_calendar:
+            calendar: ScheduleConstraint = self.get_calendar(calendar_id=row['CAL_ID'])
+            if calendar is None:
+                calendar = ScheduleConstraint()
+                calendar.init(id_str=row['CAL_ID'],
+                              location='FACTORY')
+            calendar.append_duration_info(id_str=row['DUR_ID'],
+                                          priority=row['DUR_PRIORITY'],
+                                          resume_type=row['DUR_TYPE'],
+                                          cycle_type=row['DUR_CYCLE_TYPE'],
+                                          apply_start_date=row['DUR_APPLY_START_DATE'],
+                                          apply_end_date=row['DUR_APPLY_END_DATE'],
+                                          start_date=row['DUR_START_DATE'],
+                                          end_date=row['DUR_END_DATE'])
+            self._schedule_constraints[row['CAL_ID']] = calendar
+
+    def get_route(self, route_id: str):
+        """
+
+        :param route_id:
+        :return:
+        """
+        if route_id in self._routes.keys():
+            return self._routes[route_id]
+        else:
+            return None
+
+    def get_process(self, process_id: str):
+        """
+
+        :param process_id:
+        :return:
+        """
+        if process_id in self._processes.keys():
+            return self._processes[process_id]
+        else:
+            return None
+
+    def get_inventory(self, inventory_id: str):
+        """
+
+        :param inventory_id:
+        :return:
+        """
+        if inventory_id in self._inventories.keys():
+            return self._inventories[inventory_id]
+        else:
+            return None
+
+    def get_calendar(self, calendar_id: str):
+        """
+
+        :param calendar_id:
+        :return:
+        """
+        if calendar_id in self._schedule_constraints.keys():
+            return self._schedule_constraints[calendar_id]
+        else:
+            return None

@@ -1,0 +1,14 @@
+import datetime
+
+
+class BackwardStepPlan(object):
+
+    def __init__(self, process):
+        self.final_item_id: str = ''
+        self.item_id: str = ''
+        self.step: int = 0
+        self.plant_id: str = ''
+        self.location_id: str = ''
+        self.work_order_qty: int = 0
+        self.peg_qty: int = 0
+        self.remain_order_qty: int = 0

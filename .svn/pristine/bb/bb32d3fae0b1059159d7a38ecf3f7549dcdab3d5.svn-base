@@ -1,0 +1,70 @@
+from m4.entity.Factory import Factory
+from m4.dao.AbstractSession import AbstractSession
+from m4.dao.FactoryDAO import FactoryDAO
+from m4.dao.FactoryScheduleDAO import FactoryScheduleDAO
+from m4.dao.BomDAO import BomDAO
+from ..dao.CalendarDAO import CalendarDAO
+from ..dao.InventoryDAO import InventoryDAO
+from ..dao.ProcessDAO import ProcessDAO
+from ..dao.BorDAO import BorDAO
+from ..dao.RouteDAO import RouteDAO
+from ..util.DateTimeUtility import DateTimeUtility
+from m4.entity.Factory import Factory
+
+from m4.dao.DemandDAO import DemandDAO
+
+class FactoryBuilder:
+
+    @classmethod
+    def build(cls, session: AbstractSession):
+
+        instance: Factory = Factory()
+
+        factory_info, bom, factory_calendar, inventory_master, process_master, bor_master, route_master, work_order_master = \
+            cls.get_dao_data(session)
+
+        instance.init(info=factory_info,
+                      factory_calendar=factory_calendar,
+                      inventory_master=inventory_master,
+                      process_master=process_master,
+                      bor_master=bor_master,
+                      route_master=route_master,
+                      work_order_master=work_order_master)
+
+        return instance
+
+    @classmethod
+    def get_dao_data(cls, session: AbstractSession):
+
+        factory_dao: FactoryDAO = FactoryDAO.instance()
+        factory_info = factory_dao.map(factory_dao.select_one(session=session))[0]
+
+        bom_dao: BomDAO = BomDAO.instance()
+        bom = bom_dao.map(bom_dao.select_bom_routing(session=session))
+
+        # FactoryCalendarDao 로부터 정보 받아오기
+        factory_calendar_dao: FactoryScheduleDAO = FactoryScheduleDAO.instance()
+        factory_calendar = factory_calendar_dao.map(factory_calendar_dao.select_list(session=session))
+
+        # InventoryDAO로 부터 정보 받아오기
+        inventory_dao: InventoryDAO = InventoryDAO.instance()
+        inventory_master = inventory_dao.map(inventory_dao.select_master(session=session))
+
+        # ProcessDAO로 부터 정보 받아오기
+        process_dao: ProcessDAO = ProcessDAO.instance()
+        process_master = process_dao.map(process_dao.select_master(session=session))
+
+        # BorDAO로 부터 정보 받아오기
+        bor_dao: BorDAO = BorDAO.instance()
+        bor_master = bor_dao.map(bor_dao.select_bor(session=session))
+
+        # RouteDAO로 부터 정보 받아오기
+        route_dao: RouteDAO = RouteDAO.instance()
+        route_master = route_dao.map(route_dao.select_route_master(session=session))
+
+        # DemandDAO로 부터 정보 받아오기
+        demand_dao: DemandDAO = DemandDAO.instance()
+        work_order_master = demand_dao.map(demand_dao.select_demand_master(session=session))
+
+        return factory_info, bom, factory_calendar, inventory_master, \
+               process_master, bor_master, route_master, work_order_master

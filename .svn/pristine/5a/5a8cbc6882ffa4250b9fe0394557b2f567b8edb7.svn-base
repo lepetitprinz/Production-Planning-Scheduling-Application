@@ -1,0 +1,33 @@
+
+from typing import List
+
+from ..process.Item import Item
+from ..process.ProcessLot import ProcessLot
+
+
+class ProcessLots(List[ProcessLot]):
+
+    def tick(self):
+        for obj in self:
+            obj.tick()
+
+    def check(self):
+        _available: bool = True
+        for obj in self:
+            _available = _available and obj.check()
+        return _available
+
+    def fetch(self):
+        items: List[Item] = []
+        for obj in self:
+            if not obj.has_next:
+                items.append(self.pop(self.index(obj)).fetch())
+        return items
+
+    @property
+    def finished_items(self) -> list:
+        items: List[Item] = []
+        for obj in self:
+            if not obj.has_next:
+                items.append(obj.get())
+        return items

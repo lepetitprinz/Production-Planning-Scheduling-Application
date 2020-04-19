@@ -1,0 +1,56 @@
+import datetime
+
+import datetime
+
+from ..backward.BackwardStepPlan import BackwardStepPlan
+
+
+class Item(object):
+
+    def __init__(self):
+        self.work_order_id: str = None
+        self.order_item_id: str = None
+        self.item_id: str = None
+        self.location_id: str = None
+
+        self._quantity: float = None
+        self._due_date: datetime.datetime = None
+
+        # 이전 단계 수량 조합 (product, stock, wip)
+        self._src_quantity: tuple = (0, 0, 0)
+        self._history: list = []
+
+    def init(self, info: object):
+        if isinstance(info, dict):
+            self.work_order_id = info.get('WORK_ORDER_ID', '')
+            self.order_item_id = info.get('ORDER_ITEM_ID', '')
+            self.item_id = info.get('ITEM_ID', '')
+            self.location_id = info.get('LOC_ID','')
+            self._quantity = info.get('QTY', '')
+            self._due_date = info.get('DUE_DT','')
+        elif isinstance(info, BackwardStepPlan):
+            self.work_order_id = info.work_order_id
+            self.order_item_id = info.finished_item_id
+            self.item_id = info.item_id
+            self.location_id = info.location_id
+            self._quantity = info.work_order_qty
+            self._due_date = info.due_date
+
+        else:
+            return NotImplemented
+
+    def archive(self, time_index: int, date:datetime.datetime):
+        history = {}
+        self._history.append(history)
+
+    def get_quantity(self):
+        return self._quantity
+
+    def set_quantity(self, quantity: float):
+        self._quantity = quantity
+
+    def get_due_date(self):
+        return self._due_date
+
+    def set_due_date(self, due_date: float):
+        self._due_date = due_date

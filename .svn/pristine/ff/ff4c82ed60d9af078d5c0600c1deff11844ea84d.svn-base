@@ -1,0 +1,107 @@
+
+import datetime
+from abc import *
+
+
+class AbstractPolicy(metaclass=ABCMeta):
+    """
+    Policy Object
+    Policy (비가용 계획) 정보 클래스의 상위 클래스
+    Policy 처리 관련 속성 및 동작들이 정의됨
+    Policy 의 성격에 따라 상속받는 클래스를 달리 구현
+        - PolicyDaily   : Daily ( 매일 ) 비가용 시간 규칙을 정의
+        - PolicyWeekly  : Weekly ( 매 요일 ) 비가용 시간 규칙을 정의
+        - PolicyCustom  : User-Custom 비가용 시간 구간 정보를 정의
+    """
+
+    # AbstractPolicy 클래스를 상속받는 자손 클래스들이 공유할 Static 변수들
+    staticVar: object = None                # Comment
+
+    # AbstractPolicy 클래스 Static Constants
+    _FROM_TIME: object = None               # 모든 Policy 들의 적용 시작 시점 = 시뮬레이션 시작 시간
+    _TO_TIME: object = None                 # 모든 Policy 들의 적용 종료 시점 = 시뮬레이션 종료 시간
+    _POLICY_LOCATIONS: list = [             # Policy 의 Location 값으로 가질 수 있는 문자열 목록
+        'FACTORY',                          # 공장 전체에 적용
+        'MACHINE',                          # 특정 머신에 적용
+        'WAREHOUSE'                         # 특정 창고에 적용
+    ]
+
+    def __init__(self):
+        """
+        생성자 : Policy 클래스를 상속받는 자손 클래스들이 공통으로 가질 멤버 변수들
+        """
+
+        # 1. Public
+
+        # 2. Private
+        self._location: str = ""                    # 'factory', 'machine', 'warehouse'
+        self._cause: str = ""                       # 사유 정보 문자열
+        self._level: int = 0                        # 해당 Policy 의 우선순위 값
+        self._timeIntervals: list = []              # 해당 Policy 에 정의된 비가용 시간 구간 튜플(들)의 리스트
+
+    @abstractmethod
+    def init(self, location: str, cause: str, level: int):
+        """
+
+        :return: void
+        """
+        self._set_location(location=location)
+        self._set_cause(cause=cause)
+        self._set_level(level=level)
+
+    @abstractmethod
+    def get_current_interval(self):
+        """
+
+        :return: tuple
+        """
+        pass
+
+    @abstractmethod
+    def add_time_info(self):
+        """
+
+        상속받는 클래스에 따라 파라메터터 및 로직을 다르게 구현
+        :return:
+        """
+        pass
+
+    def get_location(self):
+        """
+
+        :return: str = self._location (Policy 가 적용되는 Location 값)    ex: FACTORY, MACHINE, WAREHOUSE
+        """
+        return self._location
+
+    def get_cause(self):
+        """
+
+        :return:
+        """
+        return self._cause
+
+    def _set_location(self, location: str):
+        """
+
+        :param location: str =
+        :return: void
+        """
+        self._location = location
+
+    def _set_cause(self, cause: str):
+        """
+
+        :param cause: str =
+        :return: void
+        """
+        self._cause = cause
+
+    def _set_level(self, level: int):
+        """
+
+        :param level:
+        :return: void
+        """
+        self._level = level
+
+    def _check_date

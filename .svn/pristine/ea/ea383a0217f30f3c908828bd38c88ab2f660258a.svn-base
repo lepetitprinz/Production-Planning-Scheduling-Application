@@ -1,0 +1,42 @@
+
+import datetime
+
+from ..util.DateTimeUtility import DateTimeUtility
+
+
+class Item(object):
+
+    _DUE_DATE_STRING_FORMAT: str = "%Y%m%d"
+
+    def __init__(self):
+        self.order_id: str = None                   # ok
+        self.item_id: str = None
+        self.order_item_id: str = None              # ok
+        self.loc_id: str = None
+        self.quantity: str = None                   # ok
+        self.due_date: datetime.datetime = None     # ok
+
+        self.history: list = []
+
+    def init(self, info: dict):
+        self.order_id = info['WORK_ORDER_ID']
+        self.order_item_id = info['ORDER_ITEM_ID']
+        self.quantity = info['ORDER_QTY']
+        self.due_date = DateTimeUtility.convert_str_to_date(date_string=info['DUE_DT'],
+                                                            fmt=Item._DUE_DATE_STRING_FORMAT)
+
+    def set_item_id(self, item_id: str):
+        """
+
+        :param item_id:
+        :return:
+        """
+        self.item_id = item_id
+
+    def set_loc_id(self, loc_id: str):
+        """
+
+        :param loc_id:
+        :return:
+        """
+        self.loc_id = loc_id

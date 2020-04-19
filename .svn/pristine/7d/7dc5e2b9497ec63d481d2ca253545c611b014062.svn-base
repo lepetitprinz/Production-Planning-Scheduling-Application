@@ -1,0 +1,28 @@
+
+from ..entity.Process import Process
+from ..entity.Resource import Resource
+from ..manager.FactoryManager import FactoryManager
+
+
+class Route(object):
+    """
+        Route Object
+        Lot Control
+    """
+    def __init__(self):
+        self.route_id: str = ""         # Current Location 기준
+        self.plant_id: str = ""
+        self.route_location: str = ""   # Route Location
+        self.bom_route_dict: dict = {}  # Bom Route
+
+    def init(self, route_id: str, route_location: str, bom_route_dict: dict):
+        self.route_id = route_id
+        self.route_location = route_location
+        self.bom_route_dict = bom_route_dict
+
+    def check_availability(self, arg):
+        process: Process = FactoryManager.get_process(process_id="...")
+        if process is None:
+            pass
+        else:
+            resource: Resource = process.get_resource(resource_id="...")

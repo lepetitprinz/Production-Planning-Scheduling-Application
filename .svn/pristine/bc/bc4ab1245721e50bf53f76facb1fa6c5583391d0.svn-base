@@ -1,0 +1,19 @@
+from m4.common.SingletonInstance import SingletonInstance
+
+
+from m4.process.Item import Item
+from m4.process.Router import Router
+from m4.backward.BackwardWorkOrder import  BackwardWorkOrder
+
+class BackwardManager(SingletonInstance):
+
+    def __init__(self):
+        self.work_order_list: list = []
+
+    def init(self, backward_work_order_list: list):
+        self.work_order_list = backward_work_order_list
+
+        for work_order in self.work_order_list:
+            backward_work_order:BackwardWorkOrder = work_order
+            backward_work_order.init()
+

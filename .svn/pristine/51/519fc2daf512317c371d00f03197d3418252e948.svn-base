@@ -1,0 +1,45 @@
+import datetime
+
+from m4.manager.AbstractTimeConstraint import AbstractTimeConstraint
+from m4.util.DateTimeUtility import DateTimeUtility
+
+
+class TimeConstraintDaily(AbstractTimeConstraint):
+    """
+    Duration Daily Object
+    매일 반복되는 비가용 계획 Duration 정보를 처리
+    """
+
+    # Static 변수들
+    staticVar2: object = None           # Comment
+
+    # Static Constants
+    CONSTANT_VARIABLE2: object = None   # Comment
+
+    def __init__(self):
+        """
+        생성자 :
+        """
+
+        # 1. AbstractProcess 클래스에 정의된 멤버 변수들을 상속
+        super().__init__()
+
+    def _build_intervals(self):
+        """
+
+        :return:
+        """
+
+        delta: datetime.timedelta = self._end_date - self._start_date
+
+        before_tuple: tuple = (self._start_date, self._end_date)
+
+        while before_tuple[0] < self._apply_end_date:
+            self._intervals.append(before_tuple)
+
+            tmp_tuple: tuple = (
+                before_tuple[0] + datetime.timedelta(days=1),
+                before_tuple[0] + datetime.timedelta(days=1) + delta
+            )
+
+            before_tuple = tmp_tuple

@@ -1,0 +1,11 @@
+import sys
+import datetime
+
+from m4.process.Item import Item
+from m4.process.Runtime import Runtime
+
+
+class Lot(Runtime):
+
+    def __init__(self, item: Item, time_index: int, date: datetime.datetime, length: int = sys.int.max):
+        super().__init__(item, time_index, date, length)

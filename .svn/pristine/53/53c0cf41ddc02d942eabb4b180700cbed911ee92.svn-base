@@ -1,0 +1,22 @@
+
+
+class Factory(object):
+    """
+    Factory Object
+
+    """
+
+    def __init__(self):
+
+        # 멤버 변수 목록
+
+        # 2-2. Private
+        self._calendars: list = []  # 공장 비가용 계획 캘린더 인스턴스 리스트
+        self._transfers: list = []  #
+        self._processes: list = []  #
+
+    def init(self):
+        pass
+
+    def tick(self):
+        print("\t\tFactory.tick()")

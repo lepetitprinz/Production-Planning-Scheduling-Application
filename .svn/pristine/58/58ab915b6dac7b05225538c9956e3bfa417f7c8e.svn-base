@@ -1,0 +1,28 @@
+
+from collections import OrderedDict
+
+from m4.process.Item import Item
+
+
+class Queue(OrderedDict):
+    """
+        { Item : Ticks Passed from Arrival }
+    """
+
+    def __init__(self):
+        super(Queue, self).__init__()
+
+    def put(self, item: Item):
+        self[item] = 0
+
+    def tick(self):
+        # _values: list = list(map(lambda x: x + 1, self.values()))
+        for item in self:
+            self[item] += 1
+
+    def fetch_first(self) -> (Item, int):
+        return self.popitem(last=False) if self.has_items else None
+
+    @property
+    def has_items(self) -> bool:
+        return len(self) > 0

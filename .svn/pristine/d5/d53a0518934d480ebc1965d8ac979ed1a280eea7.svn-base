@@ -1,0 +1,26 @@
+
+from m4.process.Item import Item
+from m4.process.Queue import Queue
+
+
+if __name__ == '__main__':
+
+    queue: Queue = Queue()
+
+    queue.put(item=Item())
+    queue.put(item=Item())
+
+    queue.tick()
+
+    queue.put(item=Item())
+    queue.put(item=Item())
+    queue.put(item=Item())
+
+    queue.tick()
+    queue.tick()
+
+    items: list = []
+    while queue.has_items:
+        items.append(queue.fetch_first())
+
+    print("DEBUG POINT")

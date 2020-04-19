@@ -1,0 +1,22 @@
+from m4.dao.AbstractSession import AbstractSession
+from m4.dao.DemandDAO import DemandDAO
+
+class BackwardBuilder:
+
+    @classmethod
+    def build(cls, plan_version_dict: dict, simulation_dict: dict, session: AbstractSession):
+        backward_work_order_list = []
+
+        work_order_master = cls.get_dao_data(session)
+
+        return backward_work_order_list
+
+
+    @classmethod
+    def get_dao_data(cls, session: AbstractSession):
+
+        # DemandDAO로 부터 정보 받아오기
+        demand_dao: DemandDAO = DemandDAO.instance()
+        work_order_master = demand_dao.map(demand_dao.select_demand_master(session=session))
+
+        return work_order_master

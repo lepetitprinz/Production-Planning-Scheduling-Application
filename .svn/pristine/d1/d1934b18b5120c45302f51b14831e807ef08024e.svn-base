@@ -1,0 +1,128 @@
+
+import numpy as np
+
+from ..process.Item import Item
+from m4.operator import Resource
+
+
+class ProcessLot(object):
+    """
+    Process Lot Object
+    Machine 객체에 종속되어 Machine 이 할당받은 Lot 을 처리하는 이벤트를 수행하는 클래스
+    Setup 객체와 Lot 객체를 포함하며
+    Machine 이 Lot 인스턴스를 처리할 때
+    Machine 의 Setup Type 변경이 필요할 경우 이를 수행한 후에 하도록 설계
+    """
+
+    # Static Variables
+    staticVar2: object = None               # Comment
+
+    # Static Constants
+    _STEP = {
+        0: "QUE",
+        1: "SETUP",
+        2: "PROCESS",
+        3: "WAIT",
+        4: "MOVE"
+    }
+
+    def __init__(self):
+        """
+        생성자 :
+        """
+
+        # 2-2. Private
+        self._queue_time: int = 0
+        self._setup_time: int = 0
+        self._process_time: int = 0
+        self._wait_time: int = 0
+        self._move_time: int = 0
+
+        #
+        self._item: Item = None
+        self._current: int = -1
+
+    def __del__(self):
+        """
+        Process Lot 소멸 시 동작
+        :return: Item
+        """
+        return self._item
+
+    def init(self, item: Item):
+        """
+        Hard Coded for Test
+        :return: void
+        """
+        self._item = item
+
+        self._queue_time = 1
+        self._setup_time = 2
+        self._process_time = 3
+        self._wait_time = 2
+        self._move_time = 1
+
+    def tick(self):
+        if self.has_next:
+            self._current += 1
+        return self.current
+
+    def check(self):
+        _available: bool = self.current['STEP'] not in ['SETUP', 'PROCESS']
+        return _available
+
+    def get(self):
+        return self._item
+
+    def fetch(self):
+        return self.__del__()
+
+    def add_queue_time(self, step: int):
+        self._queue_time += step
+
+    def add_wait_time(self, step: int):
+        self._wait_time += step
+
+    def add_move_time(self, step: int):
+        self._move_time += step
+
+    @property
+    def _time_lengths(self) -> list:
+        return [self._queue_time, self._setup_time, self._process_time, self._wait_time, self._move_time]
+
+    @property
+    def _times(self) -> dict:
+        times: dict = dict()
+        for i in range(len(self._time_thresholds)):
+            interval: tuple = (self._time_thresholds[i], self._time_thresholds[i+1])
+            for j in range(interval[0] + 1, interval[1] + 1):
+                times[j] = {'TICK': j, 'STEP': self._STEP.get(i, None)}
+        return times
+
+    @property
+    def _time_thresholds(self) -> list:
+        return [0] + list(map(int, np.cumsum(self._time_lengths)))
+
+    @property
+    def _time_length(self) -> int:
+        return sum(self._time_lengths)
+
+    @property
+    def previous(self) -> dict:
+        return self._times.get(self._current - 1, None)
+
+    @property
+    def current(self) -> dict:
+        return self._times.get(self._current, None)
+
+    @property
+    def has_finished(self) -> bool:
+        return not self.has_next
+
+    @property
+    def has_next(self) -> bool:
+        return self._times.get(self._current + 1, None) is not None
+
+    @property
+    def got_to_next_stage(self) -> bool:
+        return self.previous['STEP'] != self.current['STEP']

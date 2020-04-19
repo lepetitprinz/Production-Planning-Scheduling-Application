@@ -1,0 +1,42 @@
+class Route(object):
+    """
+        Route Object
+        Lot Control
+    """
+    def __init__(self):
+        self.route_id: str = ""         # Current Location 기준
+        self.plant_id: str = ""
+        self.route_location: str = ""   # Route Location
+        self.bom_route_dict: dict = {}  # Bom Route
+
+    def init(self, route_id: str, route_location: str, bom_route_dict: dict):
+        self.route_id = route_id
+        self.route_location = route_location
+        self.bom_route_dict = bom_route_dict
+
+# class Route(object):
+#     """
+#         Route Object
+#         Lot의 이동을 Control 하는 객체
+#     """
+#
+#     def __init__(self):
+#         self.curr_location: dict = {}       # Lot Get Locations
+#         self.next_location: dict = {}       # Lot Fetch Locations
+#
+#     def init(self, info: dict):
+#
+#         from_location_type: str = info['CURR_LOC_ID_TYP']
+#         from_location_id: str = info['CURR_LOC_ID']
+#         to_location_type: str = info['NEXT_LOC_ID_TYP']
+#         to_location_id: str = info['NEXT_LOC_ID']
+#
+#         if from_location_type not in self.curr_location.keys():
+#             self.curr_location[from_location_type] = [from_location_id]
+#         else:
+#             self.curr_location[from_location_type].append(from_location_id)
+#
+#         if to_location_type not in self.next_location.keys():
+#             self.next_location[to_location_type] = [to_location_id]
+#         else:
+#             self.next_location[to_location_type].append(to_location_id)

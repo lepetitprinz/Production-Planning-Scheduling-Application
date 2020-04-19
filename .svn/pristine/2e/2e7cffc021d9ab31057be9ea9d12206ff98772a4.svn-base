@@ -1,0 +1,40 @@
+
+
+from m4.process.Item import Item
+from m4.process.ProcessLot import ProcessLot
+
+
+if __name__ == '__main__':
+
+    items: list = []
+
+    process_lot: ProcessLot = ProcessLot()
+    process_lot.init(
+        info={
+            '': 1
+        }
+    )
+
+    for i in range(10):
+        items.append(Item())
+
+    for i in range(10):
+        process_lot.put(item=items[i])
+
+    process_lot.tick()
+
+    if process_lot.has_arrived:
+        process_lot.receive_arrived()
+
+    process_lot.assign(setup_time=2, process_time=3)
+
+    process_lot.tick()
+    process_lot.tick()
+    process_lot.tick()
+    process_lot.tick()
+    process_lot.tick()
+    process_lot.tick()
+
+    process_lot.finish_process()
+
+    print("DEBUGGING POINT")

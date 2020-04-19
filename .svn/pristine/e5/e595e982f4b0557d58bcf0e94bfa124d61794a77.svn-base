@@ -1,0 +1,8 @@
+from m4.process.Item import Item
+
+
+class Lot(object):
+    def __init__(self):
+        self.order_item: Item = None
+        self.lot_id: str = None
+        self.timer: object = None

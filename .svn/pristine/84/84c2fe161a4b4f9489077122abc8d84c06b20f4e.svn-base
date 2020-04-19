@@ -1,0 +1,44 @@
+import datetime
+
+
+class Item(object):
+
+    def __init__(self):
+        self.work_order_id: str = None
+        self.order_item_id: str = None
+        self.item_id: str = None
+        self.location_id: str = None
+
+        self._required_quantity: float = None
+        self._quantity: float = None
+        self._due_date: datetime.datetime = None
+
+        # 이전 단계 수량 조합 (product, stock, wip)
+        self._src_quantity: tuple = (0, 0, 0)
+        self._history: list = []
+
+    def init(self,
+             work_order_id: str, order_item_id: str, item_id: str, location_id: str,
+             quantity: float, due_date: datetime.datetime):
+        self.work_order_id = work_order_id
+        self.order_item_id = order_item_id
+        self.item_id = item_id
+        self.location_id = location_id
+        self._quantity = quantity
+        self._due_date = due_date
+
+    def archive(self, time_index: int, date: datetime.datetime):
+        history = {}
+        self._history.append(history)
+
+    def get_quantity(self):
+        return self._quantity
+
+    def set_quantity(self, quantity: float):
+        self._quantity = quantity
+
+    def get_due_date(self):
+        return self._due_date
+
+    def set_due_date(self, due_date: float):
+        self._due_date = due_date

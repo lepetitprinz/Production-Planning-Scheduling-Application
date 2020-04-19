@@ -1,0 +1,13 @@
+from abc import *
+
+
+class AbstractTimeConstraint(metaclass=ABCMeta):
+    """
+    Abstract Time Constraint
+    """
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def check(self):
+        pass

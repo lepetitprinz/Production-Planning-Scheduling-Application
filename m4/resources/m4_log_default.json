@@ -1,0 +1,31 @@
+{
+  "version": 1.0,
+  "formatters": {
+    "simple": {
+      "format": "%(asctime)s - %(levelname)s %(filename)s-%(funcName)s : %(message)s"
+    }
+  },
+
+  "handlers": {
+    "console": {
+      "class": "logging.StreamHandler",
+      "level": "DEBUG",
+      "formatter": "simple",
+      "stream": "ext://sys.stdout"
+    },
+
+    "file_handler": {
+      "class": "logging.handlers.TimedRotatingFileHandler",
+      "level": "INFO",
+      "formatter": "simple",
+      "filename": "./logs/m4-logfile.log",
+      "when": "midnight",
+      "backupCount": "30"
+    }
+  },
+
+  "root": {
+    "level": "DEBUG",
+    "handlers": ["console", "file_handler"]
+  }
+}

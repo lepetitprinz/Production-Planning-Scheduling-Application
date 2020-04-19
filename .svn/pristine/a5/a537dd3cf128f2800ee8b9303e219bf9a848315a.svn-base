@@ -1,0 +1,12 @@
+[DatabaseSource]
+ds.connection.host=192.168.0.50
+ds.connection.port=1521
+ds.connection.sid=XE
+ds.connection.id=SCMV2
+ds.connection.password=SCMV2
+
+[FileSource]
+file.directory=/home/csh/Documents/DataSource
+file.demand=demand.csv
+file.factory=factory.csv
+file.engineconfig=engineconfig.csv

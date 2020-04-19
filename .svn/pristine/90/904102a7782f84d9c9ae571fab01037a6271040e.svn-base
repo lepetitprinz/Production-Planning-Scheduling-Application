@@ -1,0 +1,28 @@
+
+from typing import List
+
+from ..process.Item import Item
+from ..process.ProcessLot import ProcessLot
+
+
+class ProcessLots(List[ProcessLot]):
+
+    @property
+    def finished_items(self) -> list:
+        items: list = []
+        for obj in self:
+            process_lot: ProcessLot = obj
+            if not process_lot.has_next:
+                item: Item = process_lot.get()
+                items.append(item)
+        return items
+
+    def fetch(self):
+        items: list = []
+        for obj in self:
+            process_lot: ProcessLot = obj
+            if not process_lot.has_next:
+                item: Item = process_lot.fetch()
+
+    def _fetch(self, process_lot: ProcessLot):
+        pass

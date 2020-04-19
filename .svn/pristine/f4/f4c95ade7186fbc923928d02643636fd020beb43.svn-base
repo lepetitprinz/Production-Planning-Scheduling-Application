@@ -1,0 +1,44 @@
+from abc import *
+
+from m4.process.Item import Item
+
+
+class AbstractRouteNode(metaclass=ABCMeta):
+    """
+    Abstract Time Constraint
+    """
+    def __init__(self):
+        self.id = ''
+
+    @abstractmethod
+    def check(self, item: Item, available_capa: float):
+        """
+        check Constraint
+        Inventory : CapaConstraint를 체크
+        Process : Resource에 empty 상태인 체크, Time/Capa Constraint 체크
+        """
+        pass
+
+    @abstractmethod
+    def fetch(self, item:Item):
+        """
+        get and remove item quantity
+        :return : Item
+        """
+        pass
+
+    @abstractmethod
+    def put(self, item: Item):
+        """
+        put item
+        Inventory : stocks에 item을 추가
+        Process : Resource에 ProcessLot을 생성(ProcessLot안에 Lot이 존재)
+        """
+        pass
+
+    @abstractmethod
+    def run(self):
+        """
+        tick이 발생했을때 Timer의 age를 증가
+        """
+        pass

@@ -1,0 +1,14 @@
+
+
+class Item(object):
+    def __init__(self):
+        self.order_id: str = None
+        self.item_id: str = None
+        self.final_item_id: str = None
+        # 현재 location type INV, PROC
+        self.loc_type: str = None
+        self.loc_id: str = None
+        self.quantity: str = None
+
+        self.history: list = None
+

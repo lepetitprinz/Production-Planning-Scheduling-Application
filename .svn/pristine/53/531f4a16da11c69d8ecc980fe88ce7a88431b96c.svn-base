@@ -1,0 +1,30 @@
+
+
+class Route(object):
+    """
+        Route Object
+        Lot 을 이동시키는 객체
+    """
+
+    def __init__(self):
+
+        # Privates
+        self._from_locations: dict = {}     # Lot 을 get 해올 장소들
+        self._to_locations: dict = {}       # Lot 을 Fetch 할 장소들
+
+    def init(self, info: dict):
+
+        from_location_type: str = info['CURR_LOC_ID_TYP']
+        from_location_id: str = info['CURR_LOC_ID']
+        to_location_type: str = info['NEXT_LOC_ID_TYP']
+        to_location_id: str = info['NEXT_LOC_ID']
+
+        if from_location_type not in self._from_locations.keys():
+            self._from_locations[from_location_type] = [from_location_id]
+        else:
+            self._from_locations[from_location_type].append(from_location_id)
+
+        if to_location_type not in self._to_locations.keys():
+            self._to_locations[to_location_type] = [to_location_id]
+        else:
+            self._to_locations[to_location_type].append(to_location_id)

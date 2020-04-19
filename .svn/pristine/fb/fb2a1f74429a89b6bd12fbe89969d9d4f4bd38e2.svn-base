@@ -1,0 +1,158 @@
+
+import numpy as np
+import datetime
+from abc import *
+
+from ..dao.FactoryCalendarError import FactoryCalendarError
+from m4.manager.AbstractTimeConstraint import AbstractTimeConstraint
+from m4.manager.TimeConstraintOnce import TimeConstraintOnce
+from m4.manager.TimeConstraintDaily import TimeConstraintDaily
+from m4.manager.TimeConstraintWeekly import TimeConstraintWeekly
+from m4.util.TimeUtility import TimeUtility
+
+
+class ScheduleConstraint(object):
+    """
+    Schedule Constraint Object
+    Schedule Constraint (비가용 계획) 정보 클래스의 상위 클래스
+    Schedule Constraint 처리 관련 속성 및 동작들이 정의됨
+    Schedule Constraint 의 성격에 따라 상속받는 클래스를 달리 구현
+    """
+
+    # AbstractCalendar 클래스를 상속받는 자손 클래스들이 공유할 Static 변수들
+    staticVar: object = None                # Comment
+
+    # AbstractCalendar 클래스 Static Constants
+    _CALENDAR_LOCATIONS: list = [           # Policy 의 Location 값으로 가질 수 있는 문자열 목록
+        'FACTORY',                          # 공장 전체에 적용
+        'MACHINE',                          # 특정 머신에 적용
+        'WAREHOUSE'                         # 특정 창고에 적용
+    ]
+    _CYCLE_TYPES: dict = {
+        'DAY': {
+            'CONSTRUCTOR': TimeConstraintOnce,
+            'MAX_DELTA_LEN': np.Inf,
+            'MAX_DELTA_UOM': "seconds"
+        },
+        'DAILY': {
+            'CONSTRUCTOR': TimeConstraintDaily,
+            'MAX_DELTA_LEN': 24,
+            'MAX_DELTA_UOM': "hours"
+        },
+        'WEEKLY': {
+            'CONSTRUCTOR': TimeConstraintWeekly,
+            'MAX_DELTA_LEN': 7,
+            'MAX_DELTA_UOM': "weeks"
+        }
+    }
+
+    def __init__(self):
+        """
+        생성자 : Calendar 클래스를 상속받는 자손 클래스들이 공통으로 가질 멤버 변수들
+        """
+
+        # 1. Public
+
+        # 2. Private
+        self._id: str = ""              # Calendar ID
+        self._type: str = ""            # Calendar Type
+        self._location: str = ""        # 'FACTORY', 'MACHINE', 'WAREHOUSE'
+        self._durations: dict = {}      # 해당 Calendar 에 속하는 Duration 인스턴스들의 리스트 {PRIORITY: list<DURATION>}
+
+    def init(self, id_str: str, type_str: str, location: str) -> None:
+        """
+
+        :return: void
+        """
+        self._set_id(id_str=id_str)
+        self._set_type(type_str=type_str)
+        self._set_location(location=location)
+
+    def get_current_durations(self, run_time: datetime.datetime) -> dict:
+        """
+
+        :param run_time:
+        :return:
+        """
+        duration_intervals: dict = {}
+        for priority in self._durations.keys():
+            durations: list = self._durations[priority]
+            for duration in durations:
+                interval: tuple = duration.get_current_interval(run_time=run_time)
+                if len(interval) > 0:
+                    if priority not in duration_intervals.keys():
+                        duration_intervals[priority] = {(duration.id, duration.__class__.__name__): interval}
+                    else:
+                        duration_intervals[priority][(duration.id, duration.__class__.__name__)] = interval
+        return duration_intervals
+
+    def append_duration_info(self,
+                             id_str: str,
+                             priority: int,
+                             cycle_type: str,
+                             apply_start_date: datetime.datetime,
+                             apply_end_date: datetime.datetime,
+                             start_date: datetime.datetime,
+                             end_date: datetime.datetime
+                             ) -> None:
+
+        duration: AbstractTimeConstraint = None
+        if cycle_type in ScheduleConstraint._CYCLE_TYPES.keys():
+            duration = ScheduleConstraint._CYCLE_TYPES[cycle_type]['CONSTRUCTOR']()
+        else:
+            raise FactoryCalendarError(
+                f"cycle_type = '{cycle_type}' 인 Duration 인스턴스를 정의할 수 없습니다."
+            )
+
+        # 시작 및 종료 일자 세팅에 앞서 타입 검사 및 문자열이라면 변환하는 단계
+        start_date: datetime.datetime = TimeUtility.check_date_info(date_info=start_date)
+        end_date: datetime.datetime = TimeUtility.check_date_info(date_info=end_date)
+
+        # 시작 및 종료 일자 세팅에 앞서 타입 검사 및 문자열이라면 변환하는 단계
+        apply_start_date: datetime.datetime = TimeUtility.check_date_info(date_info=apply_start_date)
+        apply_end_date: datetime.datetime = TimeUtility.check_date_info(date_info=apply_end_date)
+
+        # 해당 캘린더 적용 기간 정보 점검
+        check_apply_time: bool = TimeUtility.check_from_to(
+            start_date=apply_start_date, end_date=apply_end_date, equal_flag=False
+        )
+        if not check_apply_time:
+            raise FactoryCalendarError(
+                f""
+            )
+
+        # 해당 캘린더 시간 설정 정보 점검
+        check_interval_time: bool = TimeUtility.check_from_to_delta(
+            start_date=start_date, end_date=end_date,
+            delta_length=ScheduleConstraint._CYCLE_TYPES[cycle_type]['MAX_DELTA_LEN'],
+            delta_uom=ScheduleConstraint._CYCLE_TYPES[cycle_type]['MAX_DELTA_UOM']
+        )
+        if not check_interval_time:
+            # raise AssertionError(
+            #     f"추가하려는 Duration의 시간 길이가 전체 PLAN 시간보다 깁니다."
+            # )
+            return None
+
+        duration.init(id_str=id_str,
+                      priority=priority,
+                      apply_start_date=apply_start_date,
+                      apply_end_date=apply_end_date,
+                      start_date=start_date,
+                      end_date=end_date)
+
+        if priority not in self._durations.keys():
+            self._durations[priority] = [duration]
+        else:
+            self._durations[priority].append(duration)
+
+    def get_id(self) -> str:
+        return self._id
+
+    def _set_id(self, id_str: str) -> None:
+        self._id = id_str
+
+    def _set_type(self, type_str: str) -> None:
+        self._type = type_str
+
+    def _set_location(self, location: str) -> None:
+        self._location = location

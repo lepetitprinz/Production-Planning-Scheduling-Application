@@ -1,0 +1,29 @@
+{
+  "version": 1.0,
+  "formatters": {
+    "simple": {
+      "format": "%(asctime)s - %(levelname)s - %(message)s"
+    }
+  },
+
+  "handlers": {
+    "console": {
+      "class": "logging.StreamHandler",
+      "level": "DEBUG",
+      "formatter": "simple",
+      "stream": "ext://sys.stdout"
+    },
+
+    "file_handler": {
+      "class": "logging.FileHandler",
+      "level": "INFO",
+      "formatter": "simple",
+      "filename": "./logs/m4.log"
+    }
+  },
+
+  "root": {
+    "level": "DEBUG",
+    "handlers": ["console", "file_handler"]
+  }
+}

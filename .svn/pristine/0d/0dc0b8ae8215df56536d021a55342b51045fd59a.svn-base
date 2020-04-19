@@ -1,0 +1,11 @@
+from m4.process.AbstractProcess import AbstractProcess
+
+
+class BackwardProcess(AbstractProcess):
+    """
+
+    """
+
+    def __init__(self):
+        pass
+

@@ -1,0 +1,38 @@
+
+import sys
+from collections import deque
+from typing import Deque
+
+from ..process.Runtime import Runtime
+
+
+class ProcessQueue(Deque[Runtime]):
+    """
+        [ ..., Runtime,... ]
+    """
+
+    def __init__(self, max_queue_time: int = sys.maxsize):
+        super(ProcessQueue, self).__init__()
+
+        self._max_queue_time: int = max_queue_time
+
+    def put(self, run_time: Runtime):
+        self.appendleft(run_time)
+
+    def run(self):
+        for run_time in self:
+            run_time.run()
+
+    def get(self):
+        return self[-1] if self.has_items else None
+
+    def fetch(self):
+        return self.pop() if self.has_items else None
+
+    @property
+    def has_items(self) -> bool:
+        return len(self) > 0
+
+    @property
+    def timed_out(self) -> list:
+        return [run_time for run_time in self if run_time.get_current() >= self._max_queue_time]
